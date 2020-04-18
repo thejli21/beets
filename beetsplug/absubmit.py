@@ -157,6 +157,10 @@ only files which would be processed'
             # Close the file, so the extractor can overwrite it.
             os.close(tmp_file)
             try:
+                # MY CHANGES 
+                filename_bytes = filename.encode('utf-8')
+                filename = filename_bytes.decode9'utf-8', ignore)
+                # END OF CHANGES
                 call([self.extractor, util.syspath(item.path), filename])
             except ABSubmitError as e:
                 self._log.warning(
