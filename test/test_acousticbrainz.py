@@ -25,7 +25,7 @@ import unittest
 from test._common import RSRC
 
 from beetsplug.acousticbrainz import AcousticPlugin, ABSCHEME
-
+from beetsplug.absubmit import AcousticBrainzSubmitPlugin
 
 class MapDataToSchemeTest(unittest.TestCase):
     def test_basic(self):
@@ -35,6 +35,49 @@ class MapDataToSchemeTest(unittest.TestCase):
         mapping = set(ab._map_data_to_scheme(data, scheme))
         self.assertEqual(mapping, {('attribute 1', 'value 1'),
                                    ('attribute 2', 'value 2')})
+    
+    def test_absubmit(self):
+            ab = AcousticBrainzSubmitPlugin()
+            data_path = os.path.join(RSRC, b'acousticbrainz/data.json')
+            ab.test_get_analysis(data_path)
+
+    def test_realistic_absubmit(self):
+        ab = AcousticPlugin()
+        data_path = os.path.join(RSRC, b'acousticbrainz/datainvalid.json')
+        with open(data_path) as res:
+            # MY CHANGES (  IT DOES NOT WORK, BUT IF WE CAN GET THIS TEST TO NOT ERROR, IT MIGHT BE A FIX)
+            res_bytes = res.read().encode('utf-8')
+            res = res_bytes.decode('utf-8', 'ignore')
+            # END OF CHANGES
+            data = json.loads(res)
+        mapping = set(ab._map_data_to_scheme(data, ABSCHEME))
+        expected = {
+            ('chords_key', 'A'),
+            ('average_loudness', 0.815025985241),
+            ('mood_acoustic', 0.415711194277),
+            ('chords_changes_rate', 0.0445116683841),
+            ('tonal', 0.874250173569),
+            ('mood_sad', 0.299694597721),
+            ('bpm', 162.532119751),
+            ('gender', 'female'),
+            ('initial_key', 'A minor'),
+            ('chords_number_rate', 0.00194468453992),
+            ('mood_relaxed', 0.123632438481),
+            ('chords_scale', 'minor'),
+            ('voice_instrumental', 'instrumental'),
+            ('key_strength', 0.636936545372),
+            ('genre_rosamerica', 'roc'),
+            ('mood_party', 0.234383180737),
+            ('mood_aggressive', 0.0779221653938),
+            ('danceable', 0.143928021193),
+            ('rhythm', 'VienneseWaltz'),
+            ('mood_electronic', 0.339881360531),
+            ('mood_happy', 0.0894767045975),
+            ('moods_mirex', "Cluster3"),
+            ('timbre', "bright")
+        }
+        self.assertEqual(mapping, expected)
+
 
     def test_recurse(self):
         ab = AcousticPlugin()
@@ -101,9 +144,9 @@ class MapDataToSchemeTest(unittest.TestCase):
         }
         self.assertEqual(mapping, expected)
 
-
-def suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
+    def suite():
+        return unittest.TestLoader().loadTestsFromName(__name__)
+ 
+    
 if __name__ == '__main__':
     unittest.main(defaultTest='suite')

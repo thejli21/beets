@@ -181,7 +181,36 @@ only files which would be processed'
                 # ENOENT means file does not exist, just ignore this error.
                 if e.errno != errno.ENOENT:
                     raise
-
+    def test_get_analysis(self, filepath):
+        tmp_file, filename = tempfile.mkstemp(suffix='.json')
+        try:
+            # Close the file, so the extractor can overwrite it.
+            os.close(tmp_file)
+            try:
+                call([self.extractor, util.syspath(filepath), filename])
+                # MY CHANGES 
+                filename_bytes = filename.encode('utf-8')
+                filename = filename_bytes.decode('utf-8', 'ignore')
+                # END OF CHANGES
+                
+            except ABSubmitError as e:
+                self._log.warning(
+                    u'Failed to analyse for AcousticBrainz:'
+                )
+                return None
+            with open(filename, 'r') as tmp_file:
+                analysis = json.load(tmp_file)
+            # Add the hash to the output.
+            analysis['metadata']['version']['essentia_build_sha'] = \
+                self.extractor_sha
+            return analysis
+        finally:
+            try:
+                os.remove(filename)
+            except OSError as e:
+                # ENOENT means file does not exist, just ignore this error.
+                if e.errno != errno.ENOENT:
+                    raise
     def _submit_data(self, item, data):
         mbid = item['mb_trackid']
         headers = {'Content-Type': 'application/json'}
