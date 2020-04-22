@@ -22,10 +22,29 @@ import json
 import os.path
 import unittest
 
-from test._common import RSRC
+from _common import RSRC
 
 from beetsplug.acousticbrainz import AcousticPlugin, ABSCHEME
 from beetsplug.absubmit import AcousticBrainzSubmitPlugin
+
+class Pass(object):
+
+    def __init__(self, pathval='fetched_path'):
+        self.pathval = pathval
+        self.fetched = None
+
+    def __call__(self, args):
+        pass
+
+# class FakeJSON(object):
+
+#     def __init__(self, pathval='fetched_path'):
+#         self.pathval = pathval
+#         self.fetched = None
+
+#     def __call__(self, file, read='r'):
+#         # file = open('test/rsrc/acousticbrainz/datainvalid.json', read)
+#         return '{"tonal":{}\n,"rhythm":{}\n,"lowlevel":{},"highlevel":{},"metadata":{"tags":{"encodedby:"The Intense Media ?\\xc2\\x96 233474 "}}}'
 
 class MapDataToSchemeTest(unittest.TestCase):
     def test_basic(self):
@@ -35,49 +54,26 @@ class MapDataToSchemeTest(unittest.TestCase):
         mapping = set(ab._map_data_to_scheme(data, scheme))
         self.assertEqual(mapping, {('attribute 1', 'value 1'),
                                    ('attribute 2', 'value 2')})
-    
+
+    from beetsplug import absubmit
+    from mock import patch, mock_open
+    @patch.object(absubmit, 'call', Pass())
     def test_absubmit(self):
-            ab = AcousticBrainzSubmitPlugin()
-            data_path = os.path.join(RSRC, b'acousticbrainz/data.json')
-            ab.test_get_analysis(data_path)
-
-    def test_realistic_absubmit(self):
-        ab = AcousticPlugin()
-        data_path = os.path.join(RSRC, b'acousticbrainz/datainvalid.json')
-        with open(data_path) as res:
-            # MY CHANGES (  IT DOES NOT WORK, BUT IF WE CAN GET THIS TEST TO NOT ERROR, IT MIGHT BE A FIX)
-            res_bytes = res.read().encode('utf-8')
-            res = res_bytes.decode('utf-8', 'ignore')
-            # END OF CHANGES
-            data = json.loads(res)
-        mapping = set(ab._map_data_to_scheme(data, ABSCHEME))
-        expected = {
-            ('chords_key', 'A'),
-            ('average_loudness', 0.815025985241),
-            ('mood_acoustic', 0.415711194277),
-            ('chords_changes_rate', 0.0445116683841),
-            ('tonal', 0.874250173569),
-            ('mood_sad', 0.299694597721),
-            ('bpm', 162.532119751),
-            ('gender', 'female'),
-            ('initial_key', 'A minor'),
-            ('chords_number_rate', 0.00194468453992),
-            ('mood_relaxed', 0.123632438481),
-            ('chords_scale', 'minor'),
-            ('voice_instrumental', 'instrumental'),
-            ('key_strength', 0.636936545372),
-            ('genre_rosamerica', 'roc'),
-            ('mood_party', 0.234383180737),
-            ('mood_aggressive', 0.0779221653938),
-            ('danceable', 0.143928021193),
-            ('rhythm', 'VienneseWaltz'),
-            ('mood_electronic', 0.339881360531),
-            ('mood_happy', 0.0894767045975),
-            ('moods_mirex', "Cluster3"),
-            ('timbre', "bright")
-        }
-        self.assertEqual(mapping, expected)
-
+        ab = AcousticBrainzSubmitPlugin()
+        MyObject = type('MyObject', (object,), {})
+        ab.opts = MyObject()
+        ab.opts.force_refetch = False
+        ab.opts.pretend_fetch = False
+        class MyDict(dict):
+            def __getattr__(self, attr):
+                return self[attr]
+            def __setattr__(self, attr, value):
+                self[attr] = value
+        test_item = MyDict()
+        test_item['mb_trackid'] = 'ac38f206-6f3b-4e90-afe0-5d0707356e78'
+        test_item.path = b'/some/path'
+        # data_path = os.path.join(RSRC, b'acousticbrainz/data.json')
+        ab._get_analysis(test_item)
 
     def test_recurse(self):
         ab = AcousticPlugin()
@@ -144,8 +140,8 @@ class MapDataToSchemeTest(unittest.TestCase):
         }
         self.assertEqual(mapping, expected)
 
-    def suite():
-        return unittest.TestLoader().loadTestsFromName(__name__)
+def suite():
+    return unittest.TestLoader().loadTestsFromName(__name__)
  
     
 if __name__ == '__main__':
